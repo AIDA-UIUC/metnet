@@ -3,7 +3,13 @@ import torch.nn as nn
 from axial_attention import AxialAttention
 from huggingface_hub import PyTorchModelHubMixin
 
-from metnet.layers import ConditionTime, ConvGRU, DownSampler, MetNetPreprocessor, TimeDistributed
+from metnet.layers import (
+    ConditionTime,
+    ConvGRU,
+    DownSampler,
+    MetNetPreprocessor,
+    TimeDistributed,
+)
 
 
 class MetNet(torch.nn.Module, PyTorchModelHubMixin):
@@ -43,13 +49,13 @@ class MetNet(torch.nn.Module, PyTorchModelHubMixin):
         self.input_channels = input_channels
         self.output_channels = output_channels
 
-        self.preprocessor = MetNetPreprocessor(
-            sat_channels=sat_channels, crop_size=input_size, use_space2depth=True, split_input=True
-        )
+        #         self.preprocessor = MetNetPreprocessor(
+        #             sat_channels=sat_channels, crop_size=input_size, use_space2depth=True, split_input=True
+        #         )
         # Update number of input_channels with output from MetNetPreprocessor
-        new_channels = sat_channels * 4  # Space2Depth
-        new_channels *= 2  # Concatenate two of them together
-        input_channels = input_channels - sat_channels + new_channels
+        #         new_channels = sat_channels * 4  # Space2Depth
+        #         new_channels *= 2  # Concatenate two of them together
+        #         input_channels = input_channels - sat_channels + new_channels
         self.drop = nn.Dropout(temporal_dropout)
         if image_encoder in ["downsampler", "default"]:
             image_encoder = DownSampler(input_channels + forecast_steps)
@@ -58,7 +64,10 @@ class MetNet(torch.nn.Module, PyTorchModelHubMixin):
         self.image_encoder = TimeDistributed(image_encoder)
         self.ct = ConditionTime(forecast_steps)
         self.temporal_enc = TemporalEncoder(
-            image_encoder.output_channels, hidden_dim, ks=kernel_size, n_layers=num_layers
+            image_encoder.output_channels,
+            hidden_dim,
+            ks=kernel_size,
+            n_layers=num_layers,
         )
         self.temporal_agg = nn.Sequential(
             *[
@@ -67,12 +76,14 @@ class MetNet(torch.nn.Module, PyTorchModelHubMixin):
             ]
         )
 
-        self.head = nn.Conv2d(hidden_dim, output_channels, kernel_size=(1, 1))  # Reduces to mask
+        self.head = nn.Conv2d(
+            hidden_dim, output_channels, kernel_size=(1, 1)
+        )  # Reduces to mask
 
     def encode_timestep(self, x, fstep=1):
 
         # Preprocess Tensor
-        x = self.preprocessor(x)
+        #         x = self.preprocessor(x)
 
         # Condition Time
         x = self.ct(x, fstep)
@@ -102,7 +113,9 @@ class MetNet(torch.nn.Module, PyTorchModelHubMixin):
 class TemporalEncoder(nn.Module):
     def __init__(self, in_channels, out_channels=384, ks=3, n_layers=1):
         super().__init__()
-        self.rnn = ConvGRU(in_channels, out_channels, (ks, ks), n_layers, batch_first=True)
+        self.rnn = ConvGRU(
+            in_channels, out_channels, (ks, ks), n_layers, batch_first=True
+        )
 
     def forward(self, x):
         x, h = self.rnn(x)
