@@ -123,10 +123,8 @@ class MetNet(torch.nn.Module, PyTorchModelHubMixin):
         for i in range(self.forecast_steps):
             x_i = self.encode_timestep(imgs, i)
             # out = self.head(x_i)
-            print("GOT", x_i.shape)
             out = self.upsample(x_i)
             res.append(out)
-        print("DONE")
         res = torch.stack(res, dim=1)
         return res
 
