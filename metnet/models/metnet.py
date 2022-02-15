@@ -86,11 +86,11 @@ class MetNet(torch.nn.Module, PyTorchModelHubMixin):
         self.upsample = nn.Sequential(
             # state size: hidden_dim x 8 x 8
             nn.ConvTranspose2d(hidden_dim, 128, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(128),
+            nn.InstanceNorm2d(128),
             nn.ReLU(True),
             # state size. 128 x 16 x 16
             nn.ConvTranspose2d(128, 64, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(64),
+            nn.InstanceNorm2d(64),
             nn.ReLU(True),
             # state size. 64 x 32 x 32
             nn.ConvTranspose2d(64, 1, 4, 2, 1, bias=False),

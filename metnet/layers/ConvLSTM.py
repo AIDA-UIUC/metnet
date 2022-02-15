@@ -1,5 +1,5 @@
 """Originally adapted from https://github.com/aserdega/convlstmgru, MIT License Andriy Serdega"""
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -51,7 +51,9 @@ class ConvLSTMCell(nn.Module):
 
         self.reset_parameters()
 
-    def forward(self, x: torch.Tensor, prev_state: list) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor, prev_state: list
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Compute forward pass
 
@@ -81,7 +83,7 @@ class ConvLSTMCell(nn.Module):
 
         return h_cur, c_cur
 
-    def init_hidden(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def init_hidden(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Initializes the hidden state
         Args:
@@ -168,7 +170,7 @@ class ConvLSTM(nn.Module):
 
     def forward(
         self, x: torch.Tensor, hidden_state: Optional[list] = None
-    ) -> tuple[Tensor, list[tuple[Any, Any]]]:
+    ) -> Tuple[Tensor, List[Tuple[Any, Any]]]:
         """
         Computes the output of the ConvLSTM
 
@@ -192,7 +194,9 @@ class ConvLSTM(nn.Module):
             h, c = hidden_state[layer_idx]
             output_inner = []
             for t in range(seq_len):
-                h, c = self.cell_list[layer_idx](x=cur_layer_input[t], prev_state=[h, c])
+                h, c = self.cell_list[layer_idx](
+                    x=cur_layer_input[t], prev_state=[h, c]
+                )
                 output_inner.append(h)
 
             cur_layer_input = output_inner
