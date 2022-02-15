@@ -49,13 +49,16 @@ class MetNet(torch.nn.Module, PyTorchModelHubMixin):
         self.input_channels = input_channels
         self.output_channels = output_channels
 
-        #         self.preprocessor = MetNetPreprocessor(
-        #             sat_channels=sat_channels, crop_size=input_size, use_space2depth=True, split_input=True
-        #         )
+        self.preprocessor = MetNetPreprocessor(
+            sat_channels=sat_channels,
+            crop_size=input_size,
+            use_space2depth=True,
+            split_input=False,  # =True
+        )
         # Update number of input_channels with output from MetNetPreprocessor
-        #         new_channels = sat_channels * 4  # Space2Depth
-        #         new_channels *= 2  # Concatenate two of them together
-        #         input_channels = input_channels - sat_channels + new_channels
+        new_channels = sat_channels * 4  # Space2Depth
+        new_channels *= 2  # Concatenate two of them together
+        input_channels = input_channels - sat_channels + new_channels
         self.drop = nn.Dropout(temporal_dropout)
         if image_encoder in ["downsampler", "default"]:
             image_encoder = DownSampler(input_channels + forecast_steps)
@@ -76,14 +79,29 @@ class MetNet(torch.nn.Module, PyTorchModelHubMixin):
             ]
         )
 
-        self.head = nn.Conv2d(
-            hidden_dim, output_channels, kernel_size=(1, 1)
-        )  # Reduces to mask
+        # self.head = nn.Conv2d(
+        #     hidden_dim, output_channels, kernel_size=(1, 1)
+        # )  # Reduces to mask
+
+        self.upsample = nn.Sequential(
+            # state size: hidden_dim x 8 x 8
+            nn.ConvTranspose2d(hidden_dim, 128, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(True),
+            # state size. 128 x 16 x 16
+            nn.ConvTranspose2d(128, 64, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.ReLU(True),
+            # state size. 64 x 32 x 32
+            nn.ConvTranspose2d(64, 1, 4, 2, 1, bias=False),
+            nn.Sigmoid()
+            # state size. 1 x 64 x 64
+        )
 
     def encode_timestep(self, x, fstep=1):
 
         # Preprocess Tensor
-        #         x = self.preprocessor(x)
+        x = self.preprocessor(x)
 
         # Condition Time
         x = self.ct(x, fstep)
@@ -104,8 +122,11 @@ class MetNet(torch.nn.Module, PyTorchModelHubMixin):
         res = []
         for i in range(self.forecast_steps):
             x_i = self.encode_timestep(imgs, i)
-            out = self.head(x_i)
+            # out = self.head(x_i)
+            print("GOT", x_i.shape)
+            out = self.upsample(x_i)
             res.append(out)
+        print("DONE")
         res = torch.stack(res, dim=1)
         return res
 

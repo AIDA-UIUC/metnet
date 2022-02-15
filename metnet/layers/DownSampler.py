@@ -5,7 +5,9 @@ from metnet.layers.utils import get_conv_layer
 
 
 class DownSampler(nn.Module):
-    def __init__(self, in_channels, output_channels: int = 256, conv_type: str = "standard"):
+    def __init__(
+        self, in_channels, output_channels: int = 256, conv_type: str = "standard"
+    ):
         super().__init__()
         conv2d = get_conv_layer(conv_type=conv_type)
         self.output_channels = output_channels
@@ -24,8 +26,10 @@ class DownSampler(nn.Module):
             conv2d(output_channels, output_channels, 3, padding=1),
             nn.BatchNorm2d(output_channels),
             conv2d(output_channels, output_channels, 3, padding=1),
-#             nn.MaxPool2d((2, 2), stride=1 if antialiased else 2),
-#             antialiased_cnns.BlurPool(output_channels, stride=2) if antialiased else nn.Identity(),
+            nn.MaxPool2d((2, 2), stride=1 if antialiased else 2),
+            antialiased_cnns.BlurPool(output_channels, stride=2)
+            if antialiased
+            else nn.Identity(),
         )
 
     def forward(self, x):
